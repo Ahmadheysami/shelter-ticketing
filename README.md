@@ -1,47 +1,44 @@
 # Ticketyar — Support Ticket Management System
 
-Ticketyar is a full-stack, Persian/RTL support ticket platform for teams that need a clear, auditable request workflow. Customers register, create tickets, follow the conversation, and reopen resolved requests when policy allows. Support staff triage tickets from a shared queue, assign owners, change status and priority, and keep internal notes hidden from requesters. The owner account manages administrators, active sessions, and security events.
+English | [فارسی](README.fa.md)
 
-The UI is Persian and right-to-left by default; technical values such as emails, secrets, and ticket references are rendered left-to-right.
+Ticketyar is a full-stack, Persian/RTL support ticket platform for teams that need a clear, auditable request workflow. Customers create tickets, follow the conversation, and reopen resolved requests when policy allows. Staff triage a shared queue, assign owners, change status and priority, and keep internal notes hidden from requesters. The owner account manages administrators, sessions, and security events.
+
+The UI is Persian and right-to-left by default; emails, secrets, and ticket references render left-to-right.
 
 ## Features
 
-- Registration, login, logout, email verification, password reset, and session management
+- Registration, login, email verification, password reset, and session management
 - `USER`, `ADMIN`, and `OWNER` roles with a central deny-by-default permission matrix
-- Secret-only staff login: administrators and the owner sign in with a high-entropy key and complete their own name/email on first use
-- Server-side sessions with a one-hour lifetime, rotation after MFA, and revocation on logout, password change/reset, suspension, and role changes
-- Optional TOTP two-factor authentication with one-time recovery codes
-- Ticket creation with subject, category, priority, description, and a public reference such as `TK-00001`
-- Server-side ticket search, filters, sorting, and pagination
-- Ticket conversation with public replies, staff-only internal notes, and a full activity timeline
-- Status workflow: `OPEN`, `IN_PROGRESS`, `WAITING_FOR_USER`, `RESOLVED`, `CLOSED`, including documented reopen rules
-- User dashboard with real stats and an admin dashboard with real aggregated charts
-- Admin ticket queue, assignment, status/priority management, and user management
-- Owner area for roles, audit events, and active sessions
-- Authenticated Socket.IO updates with per-ticket room authorization and reconnect/refetch behavior
-- Light/dark themes, responsive layouts, skeleton states, empty/error states, and accessible shadcn-vue-style components
+- Secret-only staff login; administrators and the owner complete their profile on first use
+- One-hour server-side sessions with rotation and revocation on security events
+- Optional TOTP MFA with one-time recovery codes
+- Tickets with category, priority, public reference (`TK-00001`), search, filters, sorting, and pagination
+- Public replies, staff-only internal notes, and a full activity timeline
+- Status workflow: `OPEN`, `IN_PROGRESS`, `WAITING_FOR_USER`, `RESOLVED`, `CLOSED`
+- Real dashboards and ticket queues for staff, plus role, audit, and session management for the owner
+- Authenticated Socket.IO updates with per-ticket room authorization and refetch on reconnect
+- Light/dark themes, responsive layouts, skeleton/empty/error states, and accessible components
 
-## Technology Stack
+## Stack
 
-| Area | Choice |
-| --- | --- |
-| Framework | Nuxt 4 (Vue 3, Nitro, Vite) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS 4 |
-| UI components | Local shadcn-vue-style components built on `reka-ui` |
-| Database | SQLite |
-| ORM | Prisma 7 with `@prisma/adapter-better-sqlite3` |
-| Validation | Zod 4 at every trust boundary |
-| Authentication | Server-side sessions, Argon2id for user passwords, secret-only staff keys, TOTP MFA |
-| Realtime | Socket.IO 4 |
-| Email | Nodemailer (SMTP optional) |
-| Tests | Vitest (unit/integration) and Playwright (E2E) |
+| Area       | Choice                                                           |
+| ---------- | ---------------------------------------------------------------- |
+| Framework  | Nuxt 4 (Vue 3, Nitro, Vite)                                      |
+| Language   | TypeScript (strict)                                              |
+| Styling    | Tailwind CSS 4, shadcn-vue-style components on `reka-ui`         |
+| Database   | SQLite + Prisma 7 (`@prisma/adapter-better-sqlite3`)             |
+| Validation | Zod 4 at every trust boundary                                    |
+| Auth       | Server-side sessions, Argon2id, secret-only staff keys, TOTP MFA |
+| Realtime   | Socket.IO 4                                                      |
+| Email      | Nodemailer (SMTP optional)                                       |
+| Tests      | Vitest (unit/integration), Playwright (E2E)                      |
 
-The project uses `npm` and keeps `package-lock.json`. Use `npm ci` for reproducible installs.
+The project uses `npm` and commits `package-lock.json`. Use `npm ci` for reproducible installs.
 
 ## Requirements
 
-- Node.js 20.19+ or 22.12+ (Node 24 is used during development)
+- Node.js 20.19+ or 22.12+
 - npm 10+
 - Chrome/Chromium for Playwright E2E tests
 
@@ -58,124 +55,77 @@ Generate the two required 32-byte keys and place them in `.env`:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-Then apply migrations and start the development server:
+Apply migrations and start the development server:
 
 ```bash
-npx prisma migrate deploy
+npm run db:deploy
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open <http://localhost:3000>.
 
 ### Owner bootstrap
 
-Set `OWNER_SECRET` in `.env` to at least 32 random characters. On startup, if no `OWNER` account exists, one is created automatically. Sign in at `/admin/login` with that secret, then complete your name and email.
+Set `OWNER_SECRET` to at least 32 random characters. On startup, Ticketyar creates the single `OWNER` account if it does not exist. Sign in at `/admin/login` with that secret, then complete your name and email. Rotating `OWNER_SECRET` updates the owner key and revokes existing owner sessions.
 
-After the first login, create administrator accounts from the users page. Each administrator receives a one-time random login key generated by the server; the key is shown once and the administrator completes their own profile on first sign-in.
-
-The optional CLI path is:
-
-```bash
-npm run bootstrap:owner
-```
-
-The server never stores raw staff keys; only a SHA-256 lookup hash is persisted. Rotating `OWNER_SECRET` also revokes existing owner sessions.
+Administrators are created from the users page. Each receives a one-time random key generated by the server; only a SHA-256 lookup hash is stored. The optional CLI path is `npm run bootstrap:owner`.
 
 ## Environment Variables
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `NODE_ENV` | Yes | `development` or `production` |
-| `APP_URL` | Yes | Absolute public origin used for CSRF, canonical URLs, and email links |
-| `DATABASE_URL` | Yes | SQLite file URL, for example `file:./data/app.db` |
-| `MFA_ENCRYPTION_KEY` | Yes | Base64-encoded 32-byte key for AES-256-GCM TOTP secrets |
-| `IP_HASH_SECRET` | Yes | Base64-encoded 32-byte key used to pseudonymize IP addresses |
-| `OWNER_SECRET` | For owner bootstrap | Random secret of at least 32 characters; server-side only |
-| `SMTP_HOST` | Optional | Enables real email delivery |
-| `SMTP_PORT` | Optional | Defaults to `587`; port `465` uses TLS |
-| `SMTP_USER` / `SMTP_PASSWORD` | Optional | SMTP authentication |
-| `SMTP_FROM` | Optional | Sender address |
-| `TRUST_PROXY` | Optional | Set to `true` only behind a trusted reverse proxy |
-| `ALLOW_SEED` | Optional | Must be `true` to run the development seed |
+| Variable             | Required            | Description                                                                               |
+| -------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| `NODE_ENV`           | Yes                 | `development` or `production`                                                             |
+| `APP_URL`            | Yes                 | Absolute public origin used for CSRF, canonical URLs, and email links                     |
+| `DATABASE_URL`       | Yes                 | SQLite file URL, e.g. `file:./data/app.db`                                                |
+| `MFA_ENCRYPTION_KEY` | Yes                 | Base64-encoded 32-byte key for AES-256-GCM TOTP secrets                                   |
+| `IP_HASH_SECRET`     | Yes                 | Base64-encoded 32-byte key for pseudonymizing IP addresses                                |
+| `OWNER_SECRET`       | For owner bootstrap | Server-side secret of at least 32 characters                                              |
+| `SMTP_*`             | Optional            | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` enable email delivery |
+| `TRUST_PROXY`        | Optional            | Set to `true` only behind a trusted reverse proxy                                         |
+| `ALLOW_SEED`         | Optional            | Must be `true` to run the development seed                                                |
 
-`.env` is ignored by Git. `.env.example` contains placeholders only.
+`.env` is ignored by Git; `.env.example` contains placeholders only. Without SMTP, delivery is never reported as successful. In development, messages are written to the gitignored `.data/mail-outbox/` directory so verification and reset links stay usable without logging tokens. Production drops undelivered mail with a warning.
 
-If SMTP is not configured, the app never claims delivery succeeded. In development, messages are written to the gitignored `.data/mail-outbox/` directory so verification and reset links remain usable without putting tokens in application logs. In production, undelivered messages are dropped with a warning.
-
-## Database and Migrations
+## Database
 
 ```bash
 npm run db:generate   # Generate the Prisma client
 npm run db:migrate    # Create/apply a development migration
-npm run db:deploy     # Apply committed migrations in production
+npm run db:deploy     # Apply committed migrations
+npm run db:seed       # Seed demo data (requires ALLOW_SEED=true)
 ```
 
-The official migration path is Prisma Migrate. Do not use `prisma db push` in production.
+Prisma Migrate is the only migration path; do not use `prisma db push` in production. The seed refuses to run in production, without `ALLOW_SEED=true`, or against a non-empty database, and it generates random credentials.
 
-For development seed data:
-
-```bash
-ALLOW_SEED=true npm run db:seed
-```
-
-The seed refuses to run in production, refuses to run without `ALLOW_SEED=true`, and only runs when the database is empty. It generates random credentials instead of known defaults.
-
-Database files and backups live under `data/` and are ignored by Git. SQLite requires persistent local storage; do not deploy it on ephemeral or network filesystems.
+Database files and backups live under `data/` and are ignored by Git. SQLite requires persistent local storage; do not use ephemeral or network filesystems.
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the development server |
-| `npm run build` | Generate Prisma Client and build for production |
-| `npm run preview` | Preview the production build |
-| `npm run typecheck` | Type-check Nuxt/Vue/TypeScript |
-| `npm run lint` | Run ESLint |
-| `npm test` | Run all Vitest unit/integration tests |
-| `npm run test:unit` | Run unit tests |
-| `npm run test:integration` | Run integration tests |
-| `npm run test:e2e` | Run Playwright E2E tests |
-| `npm run bootstrap:owner` | Provision the owner from `OWNER_SECRET` (optional) |
+| Command                                  | Purpose                                         |
+| ---------------------------------------- | ----------------------------------------------- |
+| `npm run dev`                            | Start the development server                    |
+| `npm run build`                          | Generate Prisma Client and build for production |
+| `npm run preview`                        | Preview the production build                    |
+| `npm run typecheck`                      | Type-check Nuxt/Vue/TypeScript                  |
+| `npm run lint`                           | Run ESLint                                      |
+| `npm test`                               | Run unit and integration tests                  |
+| `npm run test:unit` / `test:integration` | Run one test layer                              |
+| `npm run test:e2e`                       | Run Playwright E2E tests                        |
+| `npm run bootstrap:owner`                | Provision the owner from `OWNER_SECRET`         |
 
-Vitest uses a separate `data/test.db` database and replays the committed migrations before each run. Playwright starts or reuses the development server on port `3000`.
+Vitest uses a separate `data/test.db` and replays committed migrations before each run. Playwright starts or reuses the development server on port `3000`.
 
-## Security Highlights
+## Build and Preview Locally
 
-- Passwords are hashed with Argon2id; plaintext passwords are never stored or logged.
-- Session tokens are random, stored only as SHA-256 hashes, sent in `HttpOnly` cookies, and marked `Secure` in production.
-- Cookie-authenticated mutations require a double-submit CSRF token and a trusted `Origin`.
-- Every ticket, message, session, and admin action enforces object-level and role authorization on the server.
-- Login, registration, password reset, ticket writes, and Socket.IO events are rate-limited.
-- Staff keys use a fast lookup hash because they are high-entropy random values; OWNER/ADMIN accounts reject email/password login.
-- Critical role and account-status changes require a recent step-up re-authentication.
-- TOTP secrets are encrypted at rest with AES-256-GCM; recovery codes are single-use and stored as hashes.
-- Audit records redact credential/token-like metadata and store hashed IPs rather than raw addresses.
-- Security headers include CSP, HSTS in production, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, CORP, and a restrictive permissions policy.
-
-No system is completely secure. Reduce risk with TLS, strong secrets, patched dependencies, persistent backups, and reviewed operational access.
-
-## Project Structure
-
-```text
-app/
-  components/        UI and domain components
-  composables/       Client-side state and behavior
-  layouts/           Public, auth, and dashboard layouts
-  middleware/        Route protection for UX (server still authorizes)
-  pages/             Public and private routes
-server/
-  api/               Nitro HTTP handlers
-  services/          Business rules and authorization
-  middleware/        Security headers, CSRF issuance, global API limits
-  plugins/           Env validation and Socket.IO attachment
-  utils/             Sessions, crypto, MFA, audit, mail, and realtime helpers
-prisma/              Schema, migrations, seed, and generated client
-shared/              Domain vocabulary, permissions, Zod schemas, API DTOs
-scripts/             Owner bootstrap CLI
-tests/               Unit, integration, and E2E tests
+```bash
+npm run db:deploy   # apply migrations to data/app.db
+npm run build       # prisma generate + nuxt build
+npm run preview     # serve the build on http://localhost:3000
 ```
 
-Vue components never import Prisma or server-only modules. Database access is confined to services and server utilities.
+Relative `DATABASE_URL` paths resolve from the project root even though `nuxt preview` runs inside `.output`, so preview uses the same `data/app.db` as development and the Prisma CLI. If preview reports missing tables, run `npm run db:deploy` with the same `DATABASE_URL`.
+
+Preview runs with `NODE_ENV=production`, but loopback `APP_URL` values disable the `Secure` cookie flag so sign-in works over plain HTTP. Open `http://localhost:3000` or `http://127.0.0.1:3000`; non-local production origins keep `Secure`.
 
 ## Testing and Quality Gates
 
@@ -188,28 +138,66 @@ npm run test:e2e
 
 Tests cover authorization boundaries (including cross-user ticket access), role escalation, session revocation, MFA, CSRF-sensitive flows, ticket transitions, audit redaction, redirect validation, and email escaping.
 
+## Security
+
+- Passwords use Argon2id; plaintext passwords are never stored or logged.
+- Session tokens are random, stored as SHA-256 hashes, sent in `HttpOnly` cookies, and marked `Secure` for non-local production origins.
+- Cookie-authenticated mutations require a double-submit CSRF token and a trusted `Origin`.
+- Every ticket, message, session, and admin action enforces object-level and role authorization on the server.
+- Login, registration, password reset, ticket writes, and Socket.IO events are rate-limited.
+- TOTP secrets are encrypted at rest; recovery codes are single-use and hashed.
+- Audit records redact secrets and store hashed IPs.
+- CSP, HSTS (production), `X-Frame-Options`, `nosniff`, `Referrer-Policy`, CORP, and a restrictive permissions policy are applied.
+
+No system is completely secure. Use TLS, strong secrets, patched dependencies, persistent backups, and reviewed operational access. See [docs/SECURITY.md](docs/SECURITY.md) for the threat model and limitations.
+
+## Project Structure
+
+```text
+app/                 Pages, layouts, components, composables, route guards
+server/api/          Nitro HTTP handlers
+server/services/     Business rules and authorization
+server/middleware/   Security headers, CSRF issuance, API limits
+server/plugins/      Env validation, owner bootstrap, Socket.IO
+server/utils/        Sessions, crypto, MFA, audit, mail, realtime
+prisma/              Schema, migrations, seed, generated client
+shared/              Domain vocabulary, permissions, Zod schemas, API DTOs
+scripts/             Owner bootstrap CLI
+tests/               Unit, integration, and E2E tests
+docs/                Architecture, security, deployment
+```
+
+Vue components never import Prisma or server-only modules; database access stays in services and server utilities.
+
+## Deployment
+
+Production setup, TLS/reverse proxy, persistent SQLite storage, backups, restore, migrations, and rollback are documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). There is no verified production deployment in this repository; validate the operational checklist before going live.
+
 ## Known Limitations
 
 - File attachments are intentionally not implemented.
-- Rate limiting and Socket.IO state are in-memory, suitable for one Node instance. A multi-instance deployment needs a shared store and Socket.IO adapter.
-- SQLite is not designed for high write concurrency; use persistent local storage and tested backups.
+- Rate limiting and Socket.IO state are in-memory; multi-instance deployments need a shared store and Socket.IO adapter.
+- SQLite is not designed for high write concurrency.
 - Email verification is available but not required before login.
-- The CSP still allows inline scripts because Nuxt hydrates with inline payloads; moving to a nonce-based CSP is future work.
-- There is no verified production deployment in this repository; validate TLS, reverse-proxy trust, backups, and restore procedures before going live.
+- CSP still allows inline scripts because Nuxt hydrates with inline payloads; nonce-based CSP is future work.
 
 ## Troubleshooting
 
-**`Missing required environment variable`** — Copy `.env.example` to `.env` and set every required key.
+- **`Missing required environment variable`** — Copy `.env.example` to `.env` and set every required key.
+- **`table main.User does not exist`** — The database has no schema. Run `npm run db:deploy` against the same `DATABASE_URL`, then restart preview.
+- **Cannot sign in to the admin area** — Staff use `/admin/login` with a secret key, not email/password. If the owner key is lost, rotate `OWNER_SECRET`; the owner is rebound and old sessions are revoked.
+- **Login fails after password reset** — Previous sessions are revoked by design; sign in again.
+- **Verification email is missing** — Configure SMTP; in development inspect `.data/mail-outbox/`.
+- **`database is locked`** — SQLite allows one writer at a time; avoid heavy concurrent writes and network filesystems.
+- **E2E tests fail on port 3000** — Stop the conflicting process or let Playwright start the server.
 
-**Cannot sign in to the admin area** — Staff use `/admin/login` with their secret key, not email and password. If the owner key is lost, rotate `OWNER_SECRET`; the existing owner is rebound to the new key and old sessions are revoked.
+## Documentation
 
-**Login fails after password reset** — All previous sessions are revoked. Sign in again with the new password.
-
-**Verification email is missing** — Configure SMTP. In development, inspect the generated message under `.data/mail-outbox/`.
-
-**E2E tests fail on port 3000** — Stop any conflicting process or let Playwright start the server itself.
-
-**`database is locked`** — SQLite allows one writer at a time. Avoid heavy concurrent writes and never place the database on a network filesystem.
+| Document                                     | Contents                                           |
+| -------------------------------------------- | -------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Request flow, data model, realtime design          |
+| [docs/SECURITY.md](docs/SECURITY.md)         | Threat model, authorization, operational checklist |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)     | Production setup, backups, restore, rollback       |
 
 ## License
 

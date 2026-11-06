@@ -14,7 +14,7 @@ import type { Permission } from '../../shared/domain'
 import type { AuthContext } from './auth'
 import { resolveAuth } from './auth'
 import { hashIp, safeEqual } from './crypto'
-import { getServerEnv } from './env'
+import { getServerEnv, isLocalOriginAllowed } from './env'
 import { ApiError, apiError } from './errors'
 import { checkRateLimit } from './rate-limit'
 import { CSRF_COOKIE, CSRF_HEADER, STEP_UP_WINDOW_MS } from './session-cookie'
@@ -33,13 +33,14 @@ function isMutating(event: H3Event) {
 function assertTrustedOrigin(event: H3Event) {
   const origin = getRequestHeader(event, 'origin')
   if (!origin) return
+  const appUrl = getServerEnv().appUrl
   let expected: string
   try {
-    expected = new URL(getServerEnv().appUrl).origin
+    expected = new URL(appUrl).origin
   } catch {
     return
   }
-  if (origin !== expected) {
+  if (origin !== expected && !isLocalOriginAllowed(origin, appUrl)) {
     apiError(403, 'ORIGIN_NOT_ALLOWED', 'درخواست از منبع مجاز ارسال نشده است.')
   }
 }

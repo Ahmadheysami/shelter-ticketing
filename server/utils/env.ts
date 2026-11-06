@@ -39,6 +39,36 @@ function secretBuffer(name: string): Buffer {
   return decoded
 }
 
+/**
+ * True for local development and `npm run preview` origins. Production
+ * warnings about HTTPS/SMTP are noise there; the same config is still
+ * validated strictly when the app is exposed on a real domain.
+ */
+export function isLocalAppUrl(appUrl: string): boolean {
+  try {
+    const hostname = new URL(appUrl).hostname
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '[::1]'
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * CSRF origin checks normally require an exact match with APP_URL. During
+ * local development the same app may be opened as `localhost` or `127.0.0.1`
+ * (and on an alternate preview port). Accept loopback origins only when
+ * APP_URL itself is loopback, so production keeps the strict comparison.
+ */
+export function isLocalOriginAllowed(origin: string, appUrl: string): boolean {
+  if (!isLocalAppUrl(appUrl)) return false
+  return isLocalAppUrl(origin)
+}
+
 export function getServerEnv(): ServerEnv {
   if (cached && process.env.NODE_ENV !== 'test') return cached
 

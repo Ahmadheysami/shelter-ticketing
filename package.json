@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
+    "db:deploy": "node -e \"require('node:fs').mkdirSync('data',{recursive:true})\" && prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "bootstrap:owner": "tsx scripts/bootstrap-owner.ts",
     "test": "vitest run",

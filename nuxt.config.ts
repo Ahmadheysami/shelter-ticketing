@@ -4,7 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: process.env.NODE_ENV !== 'production' },
-  modules: ['@nuxt/eslint'],
+  // @nuxt/eslint is a devDependency used only for linting. Production installs
+  // (NODE_ENV=production, as on Netlify) skip devDependencies, so loading it
+  // unconditionally makes `nuxt prepare`/`nuxt build` fail.
+  modules: process.env.NODE_ENV === 'production' ? [] : ['@nuxt/eslint'],
 
   // Only .vue files are components. The ui/*/index.ts barrel files are for
   // explicit imports and would otherwise register duplicate component names.

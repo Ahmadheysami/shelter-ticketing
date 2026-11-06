@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import nodemailer from 'nodemailer'
 import { randomToken } from './crypto'
-import { getServerEnv } from './env'
+import { getServerEnv, isLocalAppUrl } from './env'
 
 // Email is optional. Without SMTP configuration the application never claims
 // delivery succeeded; in development the message is printed for testing.
@@ -72,7 +72,9 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
   const env = getServerEnv()
   const transport = getTransporter()
   if (!transport) {
-    if (env.isProduction) {
+    // A production build previewed on localhost should behave like
+    // development, not silently drop verification/reset links.
+    if (env.isProduction && !isLocalAppUrl(env.appUrl)) {
       console.warn('[mail:not-configured] Email delivery is not configured; message dropped.')
     } else if (process.env.NODE_ENV !== 'test') {
       await writeDevelopmentOutbox(message)

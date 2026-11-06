@@ -1,4 +1,5 @@
 import { randomToken, sha256 } from './crypto'
+import { isLocalAppUrl } from './env'
 
 export const SESSION_COOKIE = 'tm_session'
 export const CSRF_COOKIE = 'tm_csrf'
@@ -21,11 +22,22 @@ export function hashSessionToken(token: string): string {
   return sha256(token)
 }
 
+/**
+ * `nuxt preview` runs with NODE_ENV=production. Some browsers refuse to store
+ * Secure cookies received over plain HTTP, even on loopback hosts, so a local
+ * preview would create a server session that the browser never sends back.
+ * Keep Secure for real production origins and disable it for local previews.
+ */
+function useSecureCookies(): boolean {
+  if (process.env.NODE_ENV !== 'production') return false
+  return !isLocalAppUrl(process.env.APP_URL ?? '')
+}
+
 export function sessionCookieOptions(maxAgeMs: number) {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: useSecureCookies(),
     path: '/',
     maxAge: Math.floor(maxAgeMs / 1000),
   }
@@ -35,7 +47,7 @@ export function csrfCookieOptions() {
   return {
     httpOnly: false,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: useSecureCookies(),
     path: '/',
   }
 }

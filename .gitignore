@@ -1,0 +1,41 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Prisma generated client, local database, and backups
+data/
+prisma/generated/
+*.db
+*.db-journal
+backups/
+
+# Test artifacts
+coverage
+test-results
+playwright-report
+playwright/.cache
+
+# Local tooling metadata and conversation transcripts (not part of the app)
+.freebuff/
+freebuff-chat-*.md

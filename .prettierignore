@@ -1,0 +1,12 @@
+node_modules
+.nuxt
+.output
+.nitro
+.cache
+dist
+coverage
+prisma/generated
+package-lock.json
+*.db
+docs/Tasks
+AGENTS.md

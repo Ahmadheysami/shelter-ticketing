@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { defineConfig, env } from 'prisma/config'
+import { defineConfig } from 'prisma/config'
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -8,6 +8,9 @@ export default defineConfig({
     seed: 'tsx prisma/seed.ts',
   },
   datasource: {
-    url: env('DATABASE_URL'),
+    // `prisma generate` also loads this file, so it must not fail before a
+    // local `.env` exists. Commands that need a connection receive
+    // DATABASE_URL from the environment when it is configured.
+    url: process.env.DATABASE_URL || 'file:./data/app.db',
   },
 })
